@@ -103,7 +103,7 @@ and open the template in the editor.
                                         while ($registro = mysqli_fetch_assoc($resultado)) {
                                             $minha_data = $registro["data"];
                                             $minha_hora = $registro["hora"];
-                                            $minha_status = $registro["status"];
+                                            $meu_status = $registro["status"];
                                             
                                             $item = array("data" => $minha_data, "hora" => $minha_hora, "status" => $meu_status, "n_linhas" => 1);
                                             $chave = $minha_data . "_" . $minha_hora;

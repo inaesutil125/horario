@@ -1,0 +1,18 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 17/10/2017, 07:45:28
+    Author     : Inae Sutil
+*/
+
+#imgpos {
+	position: absolute; 
+	left: -102px; /* posiciona a 90px para a esquerda */ 
+	margin-top: -66px;
+        width: 360px;
+        height: 160px;
+
+	}

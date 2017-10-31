@@ -84,19 +84,58 @@ and open the template in the editor.
                
                 <div id="divTabelaHorarios">
                     <?php
+                            $cache_consulta_horarios = array();
+                            $cache_existe = FALSE;
+                            
                             function horario_status($data, $hora) {
-                                include 'conexaoBD.php';
-                                $query = "SELECT * FROM `aulas` WHERE `data` = '$data' AND `hora` = '$hora'";
-                                $resultado = mysqli_query($link, $query);
-                                $n_linhas = mysqli_num_rows($resultado);
+                                global $cache_consulta_horarios;
+                                global $cache_existe;
+                                
+                                if ($cache_existe == FALSE) {
+                                    include 'conexaoBD.php';
+                                    // 
+                                    $query = "SELECT * FROM `aulas` WHERE `data` >= '$data' AND `data` < DATE_ADD('$data', INTERVAL 7 DAY)";
+                                    // $query = "SELECT * FROM `aulas` WHERE `data` = '$data' AND `hora` = '$hora'";
+                                    $resultado = mysqli_query($link, $query);
+                                    $n_linhas = mysqli_num_rows($resultado);
 
-                                if ($resultado) {
-                                    while ($registro = mysqli_fetch_assoc($resultado)) {
-                                        $status = $registro["status"];
-                                        // array_push($horarios, $hora);
+                                    if ($resultado) {
+                                        while ($registro = mysqli_fetch_assoc($resultado)) {
+                                            $minha_data = $registro["data"];
+                                            $minha_hora = $registro["hora"];
+                                            $minha_status = $registro["status"];
+                                            
+                                            $item = array("data" => $minha_data, "hora" => $minha_hora, "status" => $meu_status, "n_linhas" => 1);
+                                            $chave = $minha_data . "_" . $minha_hora;
+                                            if (isset($cache_consulta_horarios[$chave])) {
+                                                $cache_consulta_horarios[$chave]["n_linhas"]++;
+                                            } else {
+                                                $cache_consulta_horarios[$chave] = $item;
+                                            }
+                                        }
                                     }
+                                    $cache_existe = TRUE;
+                                } 
+                                
+                                $item_cache = procura_horario_cache($data, $hora);
+                                
+                                return array("eh_livre" => $item_cache["status"] !== "1", "numero_aulas" => $item_cache["n_linhas"]);
+                            }
+                            
+                            function procura_horario_cache($data, $hora) {
+                                global $cache_consulta_horarios;
+                                
+//                                foreach ($cache_consulta_horarios as $item) {
+//                                    if ($item["data"] == $data && $item["hora"] == $hora) {
+//                                        return $item;
+//                                    }
+//                                }
+                                
+                                $chave = $data . "_" . $hora;
+                                if (isset($cache_consulta_horarios[$chave])) { 
+                                    return $cache_consulta_horarios[$chave];
                                 }
-                                return array("eh_livre" => $status === "1", "numero_aulas" => $n_linhas);
+                                return array("data" => $data, "hora" => $hora, "status" => "0", "n_linhas" => 0);
                             }
                     
                         $horarios = [];
@@ -118,45 +157,72 @@ and open the template in the editor.
 //                        var_dump($horarios);
 //                        echo "</pre>";
                    
+                        $hoje = date_create();
+                        $hoje_str = date_format($hoje, "Y-m-d");
                         $data = date('Y-m-d');
                         $diaAtual = date('w', strtotime($data));
                         //echo "Data: $data<br>Dia da Semana: $diaAtual";
                         $dia = date('d');
                         $mes = date('m');
                 
+                        // por default
+                        $segunda_data = date_create($hoje_str);
+                        
                         switch ($diaAtual){
                             case 1:
                                 $segunda = $dia;
+                                // utiliza a data default para segunda_data
                             break;
 
                             case 2:
                                 $segunda = $dia-1;
+                                date_add($segunda_data, date_interval_create_from_date_string("-1 day"));
                             break;
 
                             case 3:
                                 $segunda = $dia-2;
+                                date_add($segunda_data, date_interval_create_from_date_string("-2 day"));
                             break;
 
                             case 4:
                                 $segunda = $dia-3;
+                                date_add($segunda_data, date_interval_create_from_date_string("-3 day"));
                             break;
 
                             case 5:
                                 $segunda = $dia-4;
+                                date_add($segunda_data, date_interval_create_from_date_string("-4 day"));
                             break;
                         }
                        
+                        $segunda_str = date_format($segunda_data, "Y-m-d");
+                        
                         $terca = $segunda + 1;
+                        $terca_data = date_create($segunda_str);
+                        date_add($terca_data, date_interval_create_from_date_string("1 day"));
+                        $terca_str = date_format($terca_data, "Y-m-d");
+                        
                         $quarta = $terca + 1;
+                        $quarta_data = date_create($terca_str); 
+                        date_add($quarta_data, date_interval_create_from_date_string("1 day"));
+                        $quarta_str = date_format($quarta_data, "Y-m-d");
+                        
                         $quinta = $quarta + 1;
+                        $quinta_data = date_create($quarta_str); 
+                        date_add($quinta_data, date_interval_create_from_date_string("1 day"));
+                        $quinta_str = date_format($quinta_data, "Y-m-d");
+                        
                         $sexta = $quinta + 1;
+                        $sexta_data = date_create($quinta_str); 
+                        date_add($sexta_data, date_interval_create_from_date_string("1 day"));
+                        $sexta_str = date_format($sexta_data, "Y-m-d");
                        
                         $dias_da_semana = array(
-                            "segunda" => $segunda,
-                            "terca" => $terca,
-                            "quarta" => $quarta,
-                            "quinta" => $quinta,
-                            "sexta" => $sexta
+                            "segunda" => $segunda_data,
+                            "terca" => $terca_data,
+                            "quarta" => $quarta_data,
+                            "quinta" => $quinta_data,
+                            "sexta" => $sexta_data
                         ); 
                        
                     
@@ -166,16 +232,17 @@ and open the template in the editor.
                             }
                         echo "<form action=\"#\" method=\"GET\">";
                         echo "<table><tbody>";
-                        echo "<tr><th scope=\"col\">Horário</th><th scope=\"col\">Segunda-feira<br>" . ($dia_da_semana -4) . "/$mes</th><th scope=\"col\">Terça-feira<br>" . ($dia_da_semana -3) . "/$mes</th><th scope=\"col\">Quarta-feira<br>" . ($dia_da_semana -2) . "/$mes</th><th scope=\"col\">Quinta-feira<br>" . ($dia_da_semana -1) . "/$mes</th><th scope=\"col\">Sexta-feira<br>" . ($dia_da_semana) . "/$mes</th></tr>";
+                        echo "<tr><th scope=\"col\">Horário</th><th scope=\"col\">Segunda-feira<br>" . date_format($segunda_data, 'd/m') . "</th><th scope=\"col\">Terça-feira<br>" . date_format($terca_data, 'd/m') . "</th><th scope=\"col\">Quarta-feira<br>" . date_format($quarta_data, 'd/m') . "</th><th scope=\"col\">Quinta-feira<br>" . date_format($quinta_data, 'd/m') . "</th><th scope=\"col\">Sexta-feira<br>" . date_format($sexta_data, 'd/m') . "</th></tr>";
                         foreach ($horarios as $horario) {
                             echo "<tr>";
                             echo "<th scope=\"row\">$horario</th>";
                             foreach ($dias_da_semana as $dia_da_semana){
-                                $consulta_horario = horario_status($data, $horario);
+                                $data_fmt_consulta = date_format($dia_da_semana, "Y-m-d");
+                                $consulta_horario = horario_status($data_fmt_consulta, $horario);
                                 $eh_livre = $consulta_horario["eh_livre"];
                                 $numero_aulas = $consulta_horario["numero_aulas"];
                                 // echo "<td>" . $dia_da_semana . " " . $horario . "<button>Butão</button></td>" . PHP_EOL;
-                                echo "<td><span class=\"horario-status " . ($eh_livre ? "livre" : "ocupado") . "\">(" . $numero_aulas . ") " . ($eh_livre ? "LIVRE" : "OCUPADO") . "</span><button type=\"submit\" name=\"troca_horario\" value=\""  . $dia_da_semana . "-" . $mes . "_" . $horario . "\">Trocar</button></td>" . PHP_EOL;
+                                echo "<td><span class=\"horario-status " . ($eh_livre ? "livre" : "ocupado") . "\">(" . $numero_aulas . ") " . ($eh_livre ? "LIVRE" : "OCUPADO") . "</span><button type=\"submit\" name=\"troca_horario\" value=\""  . date_format($dia_da_semana, 'd') . "-" . $mes . "_" . $horario . "\">Trocar</button></td>" . PHP_EOL;
                             }
                         
                             echo "</tr>";
